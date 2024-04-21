@@ -53,3 +53,4 @@ for conf_n in conf_n_ls:
     corr_conf_ls.append(np.real(correlator))
 
 gv.dump(corr_conf_ls, f"../dump/quark_prop_conf_ls.dat")
+# %%
