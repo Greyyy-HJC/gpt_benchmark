@@ -16,10 +16,10 @@ corr_conf_ls = []
 for conf_n in conf_n_ls:
     U_fixed = g.convert(g.load(f"{conf_path}/wilson_b6.{conf_n}"), g.double)
 
-    # U_hyp = g.qcd.gauge.smear.hyp(U_fixed, alpha=([0.75, 0.6, 0.3]))
-    # plaq_hyp = g.qcd.gauge.plaquette(U_hyp)
+    U_hyp = g.qcd.gauge.smear.hyp(U_fixed, alpha=(np.array([0.75, 0.6, 0.3])))
+    plaq_hyp = g.qcd.gauge.plaquette(U_hyp)
     
-    grid = U_fixed[0].grid
+    grid = U_hyp[0].grid
 
     p = {
         "kappa": 0.12623,
@@ -31,7 +31,7 @@ for conf_n in conf_n_ls:
         "boundary_phases": [1, 1, 1, -1],
     }
 
-    w = g.qcd.fermion.wilson_clover(U_fixed, p)
+    w = g.qcd.fermion.wilson_clover(U_hyp, p)
 
     # create point source
     src = g.mspincolor(grid)
