@@ -61,7 +61,7 @@ if False:
 #! save configs
 U_it = g.load("../conf/S8T32/wilson_b6.balance")
 
-for n_conf in range(5):
+for n_conf in range(50):
     for gap in range(40):
         it = n_conf * 40 + gap
 
@@ -76,6 +76,6 @@ for n_conf in range(5):
             for mu in range(Nd):
                 markov(U_it[mu], w.staple(U_it, mu), mask)
 
-    g.save(f"../conf/S8T32/wilson_b6.{n_conf}", U_it, g.format.nersc())
+    # g.save(f"../conf/S8T32/wilson_b6.{n_conf}", U_it, g.format.nersc())
 
 # %%

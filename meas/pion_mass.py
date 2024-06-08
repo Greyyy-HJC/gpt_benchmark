@@ -14,9 +14,9 @@ conf_n_ls = np.arange(0, 3)
 # Main loop
 corr_conf_ls = []
 for conf_n in conf_n_ls:
-    U_fixed = g.convert(g.load(f"{conf_path}/wilson_b6.{conf_n}"), g.double)
+    U_read = g.convert(g.load(f"{conf_path}/wilson_b6.{conf_n}"), g.double) # load configuration
 
-    U_hyp = g.qcd.gauge.smear.hyp(U_fixed, alpha=(np.array([0.75, 0.6, 0.3])))
+    U_hyp = g.qcd.gauge.smear.hyp(U_read, alpha=(np.array([0.75, 0.6, 0.3]))) # smearing
     plaq_hyp = g.qcd.gauge.plaquette(U_hyp)
     
     grid = U_hyp[0].grid
