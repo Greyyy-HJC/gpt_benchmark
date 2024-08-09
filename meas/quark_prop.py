@@ -1,5 +1,5 @@
 """
-This is a script to measure quark propagator on the coulomb gauge configs. Sorted means read the gfixed configs from sorted sets.
+This is a script to measure quark propagator on the coulomb gauge configs.
 """
 # %%
 import gpt as g
