@@ -9,7 +9,6 @@ import gvar as gv
 
 # Configuration
 rng = g.random("T")
-gamma_idx = "I"
 
 conf_path = "../conf/S8T8"
 conf_n_ls = np.arange(0, 1)
