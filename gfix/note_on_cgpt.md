@@ -8,4 +8,4 @@
 
 Put [gauge_fix.cc](./gauge_fix.cc) in `lib/cgpt/lib/gauge_fix.cc`, put [transform.py](./transform.py) in `lib/gpt/core/transform.py`.
 
-Then run `./make` in `lib/cgpt`.
+Then run `./make` in `lib/cgpt`, and modify `lib/gpt/core/__init__.py` to include the new function `gauge_fix`.
