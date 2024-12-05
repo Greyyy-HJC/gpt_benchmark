@@ -1,4 +1,11 @@
 # %%
+""" 
+To build wall source and add momentum phase.
+Compare with point source results without gauge fixing.
+Checked with PyQuDA.
+"""
+
+
 import numpy as np
 import gpt as g
 import gvar as gv
