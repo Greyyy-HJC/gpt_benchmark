@@ -10,7 +10,7 @@ Two parts:
 import gpt as g
 
 # grid
-lattice = [8, 8, 8, 32]
+lattice = [4, 4, 4, 32]
 grid = g.grid(lattice, g.double)
 grid_eo = g.grid(lattice, g.double, g.redblack)
 
@@ -51,17 +51,17 @@ if True:
 
 # %%
 if False:
-    g.save("../conf/S8T32/wilson_b6.balance", U_it, g.format.nersc())
-    U_check = g.load("../conf/S8T32/wilson_b6.balance")
+    g.save("../conf/S4T32/wilson_b6.balance", U_it, g.format.nersc())
+    U_check = g.load("../conf/S4T32/wilson_b6.balance")
 
     g.message( g.norm2(U_check[1] - U_it[1]) )
 
 
 # %%
 #! save configs
-U_it = g.load("../conf/S8T32/wilson_b6.balance")
+U_it = g.load("../conf/S4T32/wilson_b6.balance")
 
-for n_conf in range(50):
+for n_conf in range(5):
     for gap in range(40):
         it = n_conf * 40 + gap
 
@@ -76,6 +76,6 @@ for n_conf in range(50):
             for mu in range(Nd):
                 markov(U_it[mu], w.staple(U_it, mu), mask)
 
-    # g.save(f"../conf/S8T32/wilson_b6.{n_conf}", U_it, g.format.nersc())
+    g.save(f"../conf/S4T32/wilson_b6.{n_conf}", U_it, g.format.nersc())
 
 # %%

@@ -40,7 +40,7 @@ for conf_n in conf_n_ls:
     # build solver using eo prec. and cg
     inv = g.algorithms.inverter
     pc = g.qcd.fermion.preconditioner
-    cg = inv.cg({"eps": 1e-10, "maxiter": 10000})
+    cg = inv.cg({"eps": 1e-8, "maxiter": 10000})
 
     slv = w.propagator(inv.preconditioned(pc.eo2_ne(), cg))
 
