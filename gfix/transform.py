@@ -18,12 +18,12 @@
 #
 import cgpt, gpt, numpy
 
-def gauge_fix(U, maxiter=1000, prec=1e-8):
+def gauge_fix(U, maxiter=1000, prec=1e-8, use_fourier=False, orthog_dir=3): #! add use_fourier and orthog_dir
     field = {
             "U_grid": U[0].grid.obj,
             "U": [u.v_obj[0] for u in U],
         }
-    r, f = cgpt.Gauge_fix(field, maxiter, prec)
+    r, f = cgpt.Gauge_fix(field, maxiter, prec, use_fourier, orthog_dir)
 
     # for gr in r:
     #     print("HALLO")
