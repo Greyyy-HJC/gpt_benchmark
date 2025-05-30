@@ -12,13 +12,18 @@ rng = g.random("T")
 conf_path = "../../conf/S16T16_cg/gauge"
 conf_n_ls = np.arange(50)
 Ls = Lt = 16 # spatial and temporal lattice size
+precision = 1e-08
 
 zmax = 16 # z shift between two F
 
 # Main loop
 corr_conf_ls = []
 for conf_n in conf_n_ls:
-    U_fixed = g.convert(g.load(f"{conf_path}/wilson_b6.cg.1e-08.{conf_n}"), g.double)
+    try:
+        U_fixed = g.convert(g.load(f"{conf_path}/wilson_b6.cg.{precision}.{conf_n}"), g.double)
+    except:
+        print(f"Skipping configuration {conf_n} - file not found")
+        continue
 
     fs1 = g.qcd.gauge.field_strength(U_fixed, mu=0, nu=3) # first F_\mu\nu 
     fs2 = g.qcd.gauge.field_strength(U_fixed, mu=0, nu=3) # second F_\mu\nu 
@@ -32,6 +37,6 @@ for conf_n in conf_n_ls:
 
     corr_conf_ls.append(g_corr)
 
-gv.dump(corr_conf_ls, f"dump/gluon_corr_conf_ls.dat")
+gv.dump(corr_conf_ls, f"dump/gluon_corr_conf_ls_cg_{precision}.dat")
 
 # %%
