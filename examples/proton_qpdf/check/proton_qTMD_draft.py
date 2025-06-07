@@ -184,7 +184,7 @@ class proton_TMD(proton_measurement):
     def create_bw_seq(self, inverter, prop, trafo, flavor, origin=None):
         tmp_trafo = g.convert(trafo, prop.grid.precision) #Need later for mixed precision solver
         
-        prop = g.create.smear.boosted_smearing(tmp_trafo, prop, w=self.width, boost=self.boost_out)
+        # prop = g.create.smear.boosted_smearing(tmp_trafo, prop, w=self.width, boost=self.boost_out)
         
         pp = 2.0 * np.pi * np.array(self.pf) / prop.grid.fdimensions
         P = g.exp_ixp(pp, origin)
@@ -217,7 +217,8 @@ class proton_TMD(proton_measurement):
             # FIXME smearing_input = g.eval(g.gamma[5]*P*g.conj(src_seq_t))
             smearing_input = g.eval(g.gamma[5]*P*g.adj(src_seq_t))
 
-            tmp_prop = g.create.smear.boosted_smearing(trafo, smearing_input,w=self.width, boost=self.boost_out)
+            # tmp_prop = g.create.smear.boosted_smearing(trafo, smearing_input,w=self.width, boost=self.boost_out)
+            tmp_prop = smearing_input
 
             dst_tmp = g.eval(inverter * tmp_prop)           
             # FIXME dst_seq.append(g.eval(g.gamma[5] * g.conj(dst_tmp)))

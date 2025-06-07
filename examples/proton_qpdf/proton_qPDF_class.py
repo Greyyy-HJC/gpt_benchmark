@@ -92,7 +92,7 @@ class proton_qPDF:
     def create_bw_seq(self, inverter, prop, trafo, flavor, tsep, hadron_momentum, origin=None):
         tmp_trafo = g.convert(trafo, prop.grid.precision)
         
-        prop = g.create.smear.boosted_smearing(tmp_trafo, prop, w=self.width, boost=self.boost_out)
+        # prop = g.create.smear.boosted_smearing(tmp_trafo, prop, w=self.width, boost=self.boost_out)
         
         pp = 2.0 * np.pi * np.array(hadron_momentum) / prop.grid.fdimensions
         P = g.exp_ixp(pp, origin)
@@ -120,7 +120,8 @@ class proton_qPDF:
             g.message("diquark contractions for Polarization ", i, " done")
         
             smearing_input = g.eval(g.gamma[5]*P*g.adj(src_seq_t))
-            tmp_prop = g.create.smear.boosted_smearing(trafo, smearing_input,w=self.width, boost=self.boost_out)
+            # tmp_prop = g.create.smear.boosted_smearing(trafo, smearing_input, w=self.width, boost=self.boost_out)
+            tmp_prop = smearing_input
             dst_tmp = g.eval(inverter * tmp_prop)           
             dst_seq.append(g.eval(g.adj(dst_tmp) * g.gamma[5]))
 
@@ -255,5 +256,5 @@ class proton_qPDF:
         src = g.mspincolor(grid)
         g.create.point(src, pos)
         trafo = g.convert(trafo, grid.precision)
-        src = g.create.smear.boosted_smearing(trafo, src, w=self.width, boost=self.boost_in)
+        # src = g.create.smear.boosted_smearing(trafo, src, w=self.width, boost=self.boost_in)
         return src 

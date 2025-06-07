@@ -114,7 +114,9 @@ def process_quark_correlator(results, momentum_label, tsep, current_z_sep, pol_n
 
 
 # configuration tag
-lat_tag = "S16T16"
+lat_tag = "S8T32"
+Ls = 8
+Lt = 32
 
 # Number of configurations
 N_conf = 50  # Adjust this value as needed
@@ -125,8 +127,8 @@ parameters = {
     "boost_out": [0, 0, 0],
     "width": 2.0,  # width of Gaussian source
     "pol": ["PpSzp"],  # polarization of the proton
-    "tsep_list": [4, 6, 8, 10],  # time separation list for three point function
-    "z_max": 16,  # maximum z separation for PDF calculation (in lattice units)
+    "tsep_list": [4, 8],  # time separation list for three point function
+    "z_max": 1,  # maximum z separation for PDF calculation (in lattice units)
 }
 hadron_momenta = [[0, 0, 0, 0]]
 
@@ -143,8 +145,6 @@ for conf_n in range(N_conf):
     
     # load gauge configuration
     g.message("Loading gauge configuration")
-    Ls = 16
-    Lt = 16
     grid = g.grid([Ls, Ls, Ls, Lt], g.double)
     rng = g.random(f"seed text")
     U_cg = g.convert(g.load(f"{conf_path}/wilson_b6.cg.{precision}.{conf_n}"), g.double)
