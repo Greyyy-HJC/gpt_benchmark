@@ -114,12 +114,12 @@ def process_quark_correlator(results, momentum_label, tsep, current_z_sep, pol_n
 
 
 # configuration tag
-lat_tag = "S8T32"
+lat_tag = "check"
 Ls = 8
 Lt = 32
 
 # Number of configurations
-N_conf = 50  # Adjust this value as needed
+N_conf = 1  # Adjust this value as needed
 
 # parameters for PDF calculation
 parameters = {
@@ -127,8 +127,8 @@ parameters = {
     "boost_out": [0, 0, 0],
     "width": 2.0,  # width of Gaussian source
     "pol": ["PpSzp"],  # polarization of the proton
-    "tsep_list": [4, 8],  # time separation list for three point function
-    "z_max": 1,  # maximum z separation for PDF calculation (in lattice units)
+    "tsep_list": [8],  # time separation list for three point function
+    "z_max": 0,  # maximum z separation for PDF calculation (in lattice units)
 }
 hadron_momenta = [[0, 0, 0, 0]]
 
@@ -147,10 +147,10 @@ for conf_n in range(N_conf):
     g.message("Loading gauge configuration")
     grid = g.grid([Ls, Ls, Ls, Lt], g.double)
     rng = g.random(f"seed text")
-    U_cg = g.convert(g.load(f"{conf_path}/wilson_b6.cg.{precision}.{conf_n}"), g.double)
-    trafo = g.convert(g.load(f"{vtrans_path}/V_trans.{precision}.{conf_n}"), g.double)  
-    # U = g.qcd.gauge.random(grid, rng)
-    # U_cg, trafo = g.gauge_fix(U, maxiter=5000)
+    # U_cg = g.convert(g.load(f"{conf_path}/wilson_b6.cg.{precision}.{conf_n}"), g.double)
+    # trafo = g.convert(g.load(f"{vtrans_path}/V_trans.{precision}.{conf_n}"), g.double)  
+    U = g.qcd.gauge.random(grid, rng)
+    U_cg, trafo = g.gauge_fix(U, maxiter=5000)
     g.message("Finished loading gauge config")
 
     # prepare inverter

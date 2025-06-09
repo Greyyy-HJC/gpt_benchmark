@@ -377,7 +377,8 @@ class proton_measurement:
         
         srcD = g.mspincolor(grid)
         g.create.point(srcD, pos)
-        srcDp = g.create.smear.boosted_smearing(trafo, srcD, w=self.width, boost=self.pos_boost)
+        # srcDp = g.create.smear.boosted_smearing(trafo, srcD, w=self.width, boost=self.pos_boost)
+        srcDp = srcD
         
         return srcDp
 
