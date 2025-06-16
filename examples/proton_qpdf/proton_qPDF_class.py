@@ -11,6 +11,8 @@ my_gammas = ["5", "T", "T5", "X", "X5", "Y", "Y5", "Z", "Z5", "I", "SXT", "SXY",
 
 ### Projection of nucleon states
 Cg5 = (1j * g.gamma[1].tensor() * g.gamma[3].tensor()) * g.gamma[5].tensor()
+CgT5 = (1j * g.gamma[1].tensor() * g.gamma[3].tensor()) * g.gamma["T"].tensor() * g.gamma[5].tensor()
+
 Pp = (g.gamma["I"].tensor() + g.gamma[3].tensor()) * 0.25
 Szp = (g.gamma["I"].tensor() - 1j*g.gamma[0].tensor()*g.gamma[1].tensor())
 Szm = (g.gamma["I"].tensor() + 1j*g.gamma[0].tensor()*g.gamma[1].tensor())
@@ -65,6 +67,7 @@ class proton_qPDF:
         # g.message("Sink smearing completed")
         
         dq = g.qcd.baryon.diquark(g(prop_f * Cg5), g(Cg5 * prop_f))
+        # dq = g.qcd.baryon.diquark(g(prop_f * CgT5), g(CgT5 * prop_f))
         proton1 = g(g.spin_trace(dq) * prop_f + dq * prop_f)
         prop_unit = g.mspincolor(prop_f.grid)
         prop_unit = g.identity(prop_unit)
@@ -106,9 +109,11 @@ class proton_qPDF:
             if (flavor == 1): 
                 g.message("starting diquark contractions for up quark insertion and Polarization ", i)
                 src_seq[i] = self.up_quark_insertion(prop, prop, Cg5, PolProjections[pol])
+                # src_seq[i] = self.up_quark_insertion(prop, prop, CgT5, PolProjections[pol])
             elif (flavor == 2):
                 g.message("starting diquark contractions for down quark insertion and Polarization ", i)
                 src_seq[i] = self.down_quark_insertion(prop, Cg5, PolProjections[pol])
+                # src_seq[i] = self.down_quark_insertion(prop, CgT5, PolProjections[pol])
             else: 
                 raise Exception("Unknown flavor for backward sequential src construction")
         

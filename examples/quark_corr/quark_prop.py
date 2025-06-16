@@ -27,6 +27,10 @@ for conf_n in conf_n_ls:
     U_fixed = g.convert(g.load(f"{conf_path}/gauge/wilson_b6.cg.1e-08.{conf_n}"), g.double)
     trafo = g.convert(g.load(f"{conf_path}/Vtrans/V_trans.1e-08.{conf_n}"), g.double)
     # U_fixed = g.convert(g.load(f"{conf_path}/wilson_b6.{conf_n}"), g.double)
+    
+    U_fixed = g.qcd.gauge.smear.hyp(U_fixed, alpha = np.array([0.75, 0.6, 0.3]))
+    
+    U_fixed, trafo = g.gauge_fix(U_fixed, maxiter=50000, prec=1e-8, use_fourier=False, orthog_dir=3) # Coulomb gauge
 
     # Quark and solver setup (same for all source positions)
     grid = U_fixed[0].grid
@@ -82,9 +86,9 @@ for conf_n in conf_n_ls:
             # boost_out = [0, 0, 0]
             # dst_dressed = g.create.smear.boosted_smearing(trafo, dst_dressed, w=width, boost=boost_out)
             
-            temp = g(g.trace(dst_dressed * g.gamma[gamma_idx]))[x, y, z, t]
+            # temp = g(g.trace(dst_dressed * g.gamma[gamma_idx]))[x, y, z, t]
             
-            # temp = g(g.trace(dst * g.gamma[gamma_idx]))[x, y, (z+dz) % Ls, t]
+            temp = g(g.trace(dst * g.gamma[gamma_idx]))[x, y, (z+dz) % Ls, t]
             temp_ls.append(temp)
             
         correlator.append(np.roll(temp_ls, -z))
@@ -114,5 +118,5 @@ for conf_n in conf_n_ls:
     corr_conf_ls.append(np.real(correlator))
 
 
-gv.dump(corr_conf_ls, f"dump/quark_prop_conf_ls.dat")
+gv.dump(corr_conf_ls, f"dump/quark_prop_conf_ls_gfix_hyp_gfix.dat")
 # %%

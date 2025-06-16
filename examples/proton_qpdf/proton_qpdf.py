@@ -114,12 +114,12 @@ def process_quark_correlator(results, momentum_label, tsep, current_z_sep, pol_n
 
 
 # configuration tag
-lat_tag = "check"
+lat_tag = "S8T32"
 Ls = 8
 Lt = 32
 
 # Number of configurations
-N_conf = 1  # Adjust this value as needed
+N_conf = 30  # Adjust this value as needed
 
 # parameters for PDF calculation
 parameters = {
@@ -147,10 +147,10 @@ for conf_n in range(N_conf):
     g.message("Loading gauge configuration")
     grid = g.grid([Ls, Ls, Ls, Lt], g.double)
     rng = g.random(f"seed text")
-    # U_cg = g.convert(g.load(f"{conf_path}/wilson_b6.cg.{precision}.{conf_n}"), g.double)
-    # trafo = g.convert(g.load(f"{vtrans_path}/V_trans.{precision}.{conf_n}"), g.double)  
-    U = g.qcd.gauge.random(grid, rng)
-    U_cg, trafo = g.gauge_fix(U, maxiter=5000)
+    U_cg = g.convert(g.load(f"{conf_path}/wilson_b6.cg.{precision}.{conf_n}"), g.double)
+    trafo = g.convert(g.load(f"{vtrans_path}/V_trans.{precision}.{conf_n}"), g.double)  
+    # U = g.qcd.gauge.random(grid, rng)
+    # U_cg, trafo = g.gauge_fix(U, maxiter=5000)
     g.message("Finished loading gauge config")
 
     # prepare inverter
@@ -271,10 +271,10 @@ for conf_n in range(N_conf):
                 g.message(f"Processed correlators for tsep = {tsep}, momentum = {momentum_label}, z separation = {current_z_sep}")
 
 # Save all results to HDF5 file
-save_correlator_hdf5(results, f"{lat_tag}_proton_PDF")
+save_correlator_hdf5(results, f"{lat_tag}_Cg5_proton_PDF")
 
 g.message("PDF calculation completed!")
-g.message(f"Output file saved as ./output/{lat_tag}_proton_PDF.h5")
+g.message(f"Output file saved as ./output/{lat_tag}_Cg5_proton_PDF.h5")
 g.message(f"Total configurations: {N_conf}")
 g.message(f"Total z separations calculated: {PDF_Measurement.get_z_separations()}")
 g.message(f"Time separations: {PDF_Measurement.tsep_list}")
