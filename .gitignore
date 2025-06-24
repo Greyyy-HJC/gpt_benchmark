@@ -2,3 +2,6 @@ S16T16/
 S16T16_cg/
 S8T32_cg/
 S32T32/
+
+# Large data files
+examples/proton_qpdf/output/c4864_hyp_proton_PDF.h5
