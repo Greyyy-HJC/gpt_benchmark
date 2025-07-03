@@ -3,7 +3,6 @@ import numpy as np
 import os
 import time
 import cupy as cp
-from itertools import permutations
 from opt_einsum import contract
 from Proton_qTMD_utils import proton_TMD
 
@@ -28,19 +27,7 @@ GI = gamma.gamma(0)
 GZ = gamma.gamma(4)
 GT = gamma.gamma(8)
 G5 = gamma.gamma(15)
-GZ5 = GZ @ G5
-GT5 = GT @ G5
 C = gamma.gamma(2) @ gamma.gamma(8)
-
-# 质子投影算符
-P_pos = GI
-P_neg = GI
-
-P_2pt = cp.zeros((Lt, 4, 4), "<c16")
-P_2pt[:Lt//2] = P_pos  # 正宇称投影
-P_2pt[Lt//2:] = P_neg   # 负宇称投影
-T = cp.ones((2 * Lt), "<f8")
-T[:] = -1
 
 epsilon= cp.zeros((3,3,3))
 for a in range (3):
