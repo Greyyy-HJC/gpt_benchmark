@@ -21,7 +21,8 @@ lat_tag = "l64c64a076" # NOTE
 sm_tag = "1HYP_GSRC_W90_k3_Z5" # NOTE
 interpolation = "5" # NOTE, new interpolation operator
 GEN_SIMD_WIDTH = 64
-Ls = Lt = 16
+Ls = 8
+Lt = 32
 
 GI = gamma.gamma(0)
 GZ = gamma.gamma(4)
@@ -126,11 +127,11 @@ def contract_2pt_TMD_pyquda(prop_f, phases): #TODO: use pyquda function
 # --------------------------
 
 ###################### load gauge ######################
-Ls = 16
-Lt = 16
+Ls = 8
+Lt = 32
 conf = 0
 grid = g.grid([Ls,Ls,Ls,Lt], g.double)
-U = g.convert( g.load(f"/home/jinchen/git/lat-software/gpt_benchmark/conf/S16T16_cg/gauge/wilson_b6.cg.1e-08.{conf}"), g.double )
+U = g.convert( g.load(f"/home/jinchen/git/lat-software/gpt_benchmark/conf/S8T32_cg/gauge/wilson_b6.cg.1e-08.{conf}"), g.double )
 
 
 L = U[0].grid.fdimensions

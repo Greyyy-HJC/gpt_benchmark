@@ -131,9 +131,9 @@ phases_3pt = Measurement.make_mom_phases_3pt(U_prime[0].grid, src_pos)
 # prepare the TMD separate indices for CG
 W_index_list_CG = Measurement.create_TMD_Wilsonline_index_list_CG(U[0].grid)
 
+
 sequential_bw_prop_down = Measurement.create_bw_seq_Pyquda(dirac, prop_exact_f, trafo, 2, src_pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
 sequential_bw_prop_up = Measurement.create_bw_seq_Pyquda(dirac, prop_exact_f, trafo, 1, src_pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
-
 
 #! gpt contract
 g.message("\ncontract_TMD loop: CG no links")
@@ -211,15 +211,13 @@ if g.rank() == 0:  # Only write from rank 0 process
 sequential_bw_prop_down = Measurement.create_bw_seq_Pyquda_pyquda(dirac, prop_exact_f, trafo, 2, src_pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
 sequential_bw_prop_up = Measurement.create_bw_seq_Pyquda_pyquda(dirac, prop_exact_f, trafo, 1, src_pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
 
-
-
 #! pyquda contract
 g.message("\ncontract_TMD loop: CG no links")
 proton_TMDs_down = [] # [WL_indices][pol][qext][gammalist][tau]
 proton_TMDs_up = []
 
-
-phases_3pt_pyq = phase.MomentumPhase(latt_info).getPhases([[0, 0, 1]])
+qext_xyz = [v[:3] for v in parameters["qext"]] #! [x, y, z] to be consistent with "qext"
+phases_3pt_pyq = phase.MomentumPhase(latt_info).getPhases(qext_xyz)
 
 sequential_bw_prop_down_pyq = contract(
                 "qwtzyx, pwtzyxjicf, gim -> pqgwtzyxjmcf",

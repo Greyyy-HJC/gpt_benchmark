@@ -186,14 +186,6 @@ class proton_TMD(proton_measurement):
         
     #! PyQUDA: contract 2pt TMD
     def contract_2pt_TMD_pyquda(self, prop_f, phases, trafo, tag, interpolation = "5"): 
-        Lt = prop_f.grid.fdimensions[3]
-        
-        P_2pt_gamma = cp.zeros((16, Lt, 4, 4), "<c16")
-        for gamma_idx, gamma_pyq in enumerate(my_pyquda_gammas):
-            P_2pt = cp.zeros((Lt, 4, 4), "<c16")
-            P_2pt[:] = gamma_pyq
-            P_2pt_gamma[gamma_idx] = P_2pt
-            
         if interpolation == "5":
             interp_opt = C @ G5
         elif interpolation == "T5":
@@ -211,6 +203,14 @@ class proton_TMD(proton_measurement):
         g.message("Sink smearing completed")
         
         prop_f_pyq = gpt.LatticePropagatorGPT(prop_f, GEN_SIMD_WIDTH)
+        
+        Lt = np.shape(prop_f_pyq.data)[1]
+        
+        P_2pt_gamma = cp.zeros((16, Lt, 4, 4), "<c16")
+        for gamma_idx, gamma_pyq in enumerate(my_pyquda_gammas):
+            P_2pt = cp.zeros((Lt, 4, 4), "<c16")
+            P_2pt[:] = gamma_pyq
+            P_2pt_gamma[gamma_idx] = P_2pt
         
         corr = (
                 - contract(
@@ -381,9 +381,7 @@ class proton_TMD(proton_measurement):
         P = g.exp_ixp(pp, origin)
         
         src_seq = [g.mspincolor(prop.grid) for i in range(len(self.pol_list))]
-        Ls = prop.grid.fdimensions[0]
-        Lt = prop.grid.fdimensions[3]
-        dst_seq = cp.zeros((len(self.pol_list), 2, Lt, Ls, Ls, int(Ls/2), 4, 4, 3, 3), "<c16") # even/odd, t, z, y, x/2, spin, spin, color, color
+        dst_seq = []
         
         for i, pol in enumerate(self.pol_list):
 
@@ -429,9 +427,12 @@ class proton_TMD(proton_measurement):
             src_pyquda = gpt.LatticePropagatorGPT(tmp_prop, GEN_SIMD_WIDTH)
             prop_pyquda = core.invertPropagator(dirac, src_pyquda, 1, 0) # NOTE or "prop_pyquda = core.invertPropagator(dirac, src_pyquda, 0)" depends on the quda version
             
-            prop_pyquda = contract( "wtzyxijfc, ik -> wtzyxjkcf", prop_pyquda.data.conj(), G5 )
+            prop_pyquda_contracted = contract( "wtzyxijfc, ik -> wtzyxjkcf", prop_pyquda.data.conj(), G5 )
+            del src_pyquda, prop_pyquda
 
-            dst_seq[i] = prop_pyquda
+            dst_seq.append(prop_pyquda_contracted)
+            
+        dst_seq = cp.asarray(dst_seq)
 
         return dst_seq
 

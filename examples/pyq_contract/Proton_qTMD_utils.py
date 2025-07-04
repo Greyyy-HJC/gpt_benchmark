@@ -283,9 +283,9 @@ class proton_TMD(proton_measurement):
         P = g.exp_ixp(pp, origin)
         
         src_seq = [g.mspincolor(prop.grid) for i in range(len(self.pol_list))]
-        dst_seq = cp.zeros((len(self.pol_list), 2, prop.grid.fdimensions[3], prop.grid.fdimensions[2], prop.grid.fdimensions[1], int(prop.grid.fdimensions[0]/2), 4, 4, 3, 3), "<c16") # even/odd, t, z, y, x/2, spin, spin, color, color
+        # dst_seq = cp.zeros((len(self.pol_list), 2, prop.grid.fdimensions[3], prop.grid.fdimensions[2], prop.grid.fdimensions[1], int(prop.grid.fdimensions[0]/2), 4, 4, 3, 3), "<c16") # even/odd, t, z, y, x/2, spin, spin, color, color
         
-        # dst_seq = []
+        dst_seq = []
         
         #g.qcd.baryon.proton_seq_src(prop, src_seq, self.t_insert, flavor)
         for i, pol in enumerate(self.pol_list):
@@ -332,17 +332,11 @@ class proton_TMD(proton_measurement):
             src_pyquda = gpt.LatticePropagatorGPT(tmp_prop, GEN_SIMD_WIDTH)
             prop_pyquda = core.invertPropagator(dirac, src_pyquda, 1, 0) # NOTE or "prop_pyquda = core.invertPropagator(dirac, src_pyquda, 0)" depends on the quda version
             
-            prop_pyquda = contract( "wtzyxijfc, ik -> wtzyxjkcf", prop_pyquda.data.conj(), G5 )
+            prop_pyquda_contracted = contract( "wtzyxijfc, ik -> wtzyxjkcf", prop_pyquda.data.conj(), G5 )
             
-            # dst_tmp = g.mspincolor(prop.grid)
-            # gpt.LatticePropagatorGPT(dst_tmp, GEN_SIMD_WIDTH, prop_pyquda)
-            # del src_pyquda, prop_pyquda
+            dst_seq.append(prop_pyquda_contracted)
 
-            # dst_gpt = g.eval(g.adj(dst_tmp) * g.gamma[5])
-            
-            # dst_pyquda = gpt.LatticePropagatorGPT(dst_gpt, GEN_SIMD_WIDTH)
-            
-            dst_seq[i] = prop_pyquda
+        dst_seq = cp.asarray(dst_seq)
 
         return dst_seq
 

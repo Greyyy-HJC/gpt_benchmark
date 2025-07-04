@@ -1,4 +1,4 @@
-profile	1.1.0	1.1.0-e23cd7e4f-sm_86	cpu_arch=x86_64,gpu_arch=sm_86,cuda_version=12.2.140	# Last updated Thu Jul  3 22:01:45 2025
+profile	1.1.0	1.1.0-e23cd7e4f-sm_86	cpu_arch=x86_64,gpu_arch=sm_86,cuda_version=12.2.140	# Last updated Fri Jul  4 10:42:18 2025
 
   total time	     percent	cum. percent	       calls	 time / call	          volume	name	aux	comment
     0.346988	     33.3016	     33.3016	         505	 0.000687104	      8x16x16x16	N4quda26WilsonCloverPreconditionedINS_15WilsonCloverArgIdLi3ELi4EL21QudaReconstructType_s12ELb0EEEEE	policy,GPU-offline,vol=32768,parity=1,precision=8,order=2,Ns=4,Nc=3,commDim=0000,xpay,n_rhs=1,n_rhs_tile=1,topo=1111,p2p=0,gdr=0,nvshmem=0,pol=110000000000000000	# 91.56 Gflop/s, 131.24 GB/s, tuning took 0.011018 seconds at Thu Jul  3 15:49:44 2025

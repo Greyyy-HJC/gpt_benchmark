@@ -23,7 +23,7 @@ import subprocess
 data_dir="/lustre/orion/nph158/proj-shared/jinchen/run/nucleon_TMD/data" # NOTE
 lat_tag = "l64c64a076" # NOTE
 sm_tag = "1HYP_GSRC_W90_k3_Z5" # NOTE
-interpolation = "Z5" # NOTE, new interpolation operator
+interpolation = "5" # NOTE, new interpolation operator
 GEN_SIMD_WIDTH = 64
 conf = g.default.get_int("--config_num", 0)
 g.message(f"--lat_tag {lat_tag}")
@@ -46,13 +46,13 @@ parameters = {
     
     # NOTE:
     "eta": [0],  # irrelavant for CG TMD
-    "b_z": 20,
-    "b_T": 16,
+    "b_z": 1,
+    "b_T": 1,
 
     "qext": [list(v + (0,)) for v in {tuple(sorted((x, y, z))) for x in [-2,-1,0] for y in [-2,-1,0] for z in [0]}], # momentum transfer for TMD, pf = pi + q
     "qext_PDF": [[x,y,z,0] for x in [-2,-1,0] for y in [-2,-1,0] for z in [-2,-1,0]], # momentum transfer for PDF, not used 
     "pf": [0,0,7,0],
-    "p_2pt": [[x,y,z,0] for x in [-2, -1, 0] for y in [-2, -1, 0] for z in [5, 6, 7, 8, 9]], # 2pt momentum, should match pf & pi
+    "p_2pt": [[x,y,z,0] for x in [-2, -1, 0] for y in [-2, -1, 0] for z in [7]], # 2pt momentum, should match pf & pi
 
     "boost_in": [0,0,3],
     "boost_out": [0,0,3],
@@ -95,7 +95,7 @@ g.mem_report(details=False)
 src_shift = np.array([0,0,0,0]) + np.array([7,11,13,23])
 src_origin = np.array([int(conf)%L[i] for i in range(4)]) + src_shift
 src_positions = srcLoc_distri_eq(L, src_origin) # create a list of source 4*4*4*4
-src_production = src_positions[0: 8] # take the number of sources needed for this project NOTE
+src_production = src_positions[0: 1] # take the number of sources needed for this project NOTE
 
 ###################### create multigrid inverter ######################
 latt_info = LatticeInfo([Ls, Ls, Ls, Lt], -1, 1.0)
@@ -150,13 +150,13 @@ for pos in src_production:
     g.message("TIME Pyquda-->GPT: Forward propagator inversion", time.time() - t0)
 
     #! GPT: contract 2pt TMD
-    cp.cuda.runtime.deviceSynchronize()
-    t0 = time.time()
-    tag = get_c2pt_file_tag(data_dir, lat_tag, conf, "ex", pos, sm_tag)
-    phases_2pt = Measurement.make_mom_phases_2pt(U[0].grid, pos)
-    Measurement.contract_2pt_TMD(prop_exact_f, phases_2pt, trafo, tag, interpolation) # NOTE, new interpolation operator
-    cp.cuda.runtime.deviceSynchronize()
-    g.message("TIME GPT: Contraction 2pt (includes sink smearing)", time.time() - t0)
+    # cp.cuda.runtime.deviceSynchronize()
+    # t0 = time.time()
+    # tag = get_c2pt_file_tag(data_dir, lat_tag, conf, "ex", pos, sm_tag)
+    # phases_2pt = Measurement.make_mom_phases_2pt(U[0].grid, pos)
+    # Measurement.contract_2pt_TMD(prop_exact_f, phases_2pt, trafo, tag, interpolation) # NOTE, new interpolation operator
+    # cp.cuda.runtime.deviceSynchronize()
+    # g.message("TIME GPT: Contraction 2pt (includes sink smearing)", time.time() - t0)
     
     
     #! Pyquda: contract 2pt TMD
@@ -171,12 +171,12 @@ for pos in src_production:
     
 
     #! GPT: get backward propagator through sequential source for U and D
-    cp.cuda.runtime.deviceSynchronize()
-    t0 = time.time()
-    sequential_bw_prop_down = Measurement.create_bw_seq_Pyquda(dirac, prop_exact_f, trafo, 2, pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
-    sequential_bw_prop_up = Measurement.create_bw_seq_Pyquda(dirac, prop_exact_f, trafo, 1, pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
-    cp.cuda.runtime.deviceSynchronize()
-    g.message("TIME GPT-->Pyquda-->GPT: Backward propagator through sequential source for U and D", time.time() - t0)
+    # cp.cuda.runtime.deviceSynchronize()
+    # t0 = time.time()
+    # sequential_bw_prop_down = Measurement.create_bw_seq_Pyquda(dirac, prop_exact_f, trafo, 2, pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
+    # sequential_bw_prop_up = Measurement.create_bw_seq_Pyquda(dirac, prop_exact_f, trafo, 1, pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
+    # cp.cuda.runtime.deviceSynchronize()
+    # g.message("TIME GPT-->Pyquda-->GPT: Backward propagator through sequential source for U and D", time.time() - t0)
     
     #! PyQUDA: get backward propagator through sequential source for U and D
     cp.cuda.runtime.deviceSynchronize()
@@ -187,7 +187,7 @@ for pos in src_production:
     g.message("TIME GPT-->Pyquda: Backward propagator through sequential source for U and D", time.time() - t0)
 
     #! GPT: prepare phases for qext
-    phases_3pt = Measurement.make_mom_phases_3pt(U[0].grid, pos)
+    # phases_3pt = Measurement.make_mom_phases_3pt(U[0].grid, pos)
     
     #! PyQUDA: prepare phases for qext
     qext_xyz = [v[:3] for v in parameters["qext"]] #! [x, y, z] to be consistent with "qext"
@@ -197,32 +197,33 @@ for pos in src_production:
     W_index_list_CG = Measurement.create_TMD_Wilsonline_index_list_CG(U[0].grid)
         
     #! GPT: contract TMD
-    g.message("\ncontract_TMD loop: CG no links")
-    proton_TMDs_down = [] # [WL_indices][pol][qext][gammalist][tau]
-    proton_TMDs_up = []
-    for iW, WL_indices in enumerate(W_index_list_CG):
-        cp.cuda.runtime.deviceSynchronize()
-        t0 = time.time()
-        g.message(f"TIME GPT: contract TMD {iW+1}/{len(W_index_list_CG)} {WL_indices}")
-        tmd_forward_prop = Measurement.create_fw_prop_TMD_CG(prop_exact_f, [WL_indices])
-        cp.cuda.runtime.deviceSynchronize()
-        g.message(f"TIME GPT: cshift", time.time() - t0)
-        cp.cuda.runtime.deviceSynchronize()
-        t0 = time.time()
-        proton_TMDs_down += [list(g.slice_trDA(sequential_bw_prop_down, tmd_forward_prop, phases_3pt,3))]
-        proton_TMDs_up += [list(g.slice_trDA(sequential_bw_prop_up, tmd_forward_prop, phases_3pt,3))]
-        cp.cuda.runtime.deviceSynchronize()
-        g.message(f"TIME GPT: contract TMD for U and D", time.time() - t0)
-        del tmd_forward_prop
-    proton_TMDs_down = np.array(proton_TMDs_down)
-    proton_TMDs_up = np.array(proton_TMDs_up)
-    g.message(f"contract_TMD over: proton_TMDs.shape {np.shape(proton_TMDs_down)}")
+    # g.message("\ncontract_TMD loop: CG no links")
+    # proton_TMDs_down = [] # [WL_indices][pol][qext][gammalist][tau]
+    # proton_TMDs_up = []
+    # for iW, WL_indices in enumerate(W_index_list_CG):
+    #     cp.cuda.runtime.deviceSynchronize()
+    #     t0 = time.time()
+    #     g.message(f"TIME GPT: contract TMD {iW+1}/{len(W_index_list_CG)} {WL_indices}")
+    #     tmd_forward_prop = Measurement.create_fw_prop_TMD_CG(prop_exact_f, [WL_indices])
+    #     cp.cuda.runtime.deviceSynchronize()
+    #     g.message(f"TIME GPT: cshift", time.time() - t0)
+    #     cp.cuda.runtime.deviceSynchronize()
+    #     t0 = time.time()
+    #     proton_TMDs_down += [list(g.slice_trDA(sequential_bw_prop_down, tmd_forward_prop, phases_3pt,3))]
+    #     proton_TMDs_up += [list(g.slice_trDA(sequential_bw_prop_up, tmd_forward_prop, phases_3pt,3))]
+    #     cp.cuda.runtime.deviceSynchronize()
+    #     g.message(f"TIME GPT: contract TMD for U and D", time.time() - t0)
+    #     del tmd_forward_prop
+    # proton_TMDs_down = np.array(proton_TMDs_down)
+    # proton_TMDs_up = np.array(proton_TMDs_up)
+    # g.message(f"contract_TMD over: proton_TMDs.shape {np.shape(proton_TMDs_down)}")
     
     
     #! PyQUDA: contract TMD
     g.message("\ncontract_TMD loop: CG no links")
     proton_TMDs_down = [] # [WL_indices][pol][qext][gammalist][tau]
     proton_TMDs_up = []
+    
     sequential_bw_joint_down_pyq = contract(
                 "qwtzyx, pwtzyxjicf, gim -> pqgwtzyxjmcf",
                 phases_3pt_pyq, sequential_bw_prop_down_pyq, pyquda_gamma_ls
