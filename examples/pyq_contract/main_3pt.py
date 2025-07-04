@@ -234,10 +234,10 @@ sequential_bw_prop_up_pyq = contract(
 for iW, WL_indices in enumerate(W_index_list_CG):
     cp.cuda.runtime.deviceSynchronize()
     t0 = time.time()
-    g.message(f"TIME GPT: contract TMD {iW+1}/{len(W_index_list_CG)} {WL_indices}")
+    g.message(f"TIME PyQUDA: contract TMD {iW+1}/{len(W_index_list_CG)} {WL_indices}")
     tmd_forward_prop = create_fw_prop_TMD_CG_pyquda(propag, WL_indices)
     cp.cuda.runtime.deviceSynchronize()
-    g.message(f"TIME GPT: cshift", time.time() - t0)
+    g.message(f"TIME PyQUDA: cshift", time.time() - t0)
     cp.cuda.runtime.deviceSynchronize()
     t0 = time.time()
     
@@ -245,7 +245,7 @@ for iW, WL_indices in enumerate(W_index_list_CG):
     proton_TMDs_up += [contract("pqgwtzyxjmcf, wtzyxmjfc -> pqgt", sequential_bw_prop_up_pyq, tmd_forward_prop.data).get()]
     
     cp.cuda.runtime.deviceSynchronize()
-    g.message(f"TIME GPT: contract TMD for U and D", time.time() - t0)
+    g.message(f"TIME PyQUDA: contract TMD for U and D", time.time() - t0)
     del tmd_forward_prop
 proton_TMDs_down = np.array(proton_TMDs_down)
 proton_TMDs_up = np.array(proton_TMDs_up)
