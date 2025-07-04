@@ -1,6 +1,6 @@
 # Correlation function shape: (16, 2, 16)
 # Format: [momentum_index][timeslice] value
-gpt_contract_time: 0.356207 seconds
+gpt_contract_time: 0.355962 seconds
 
 5 0: [-4.80213899e-06-8.78638138e-07j -6.29494471e-06+2.92572577e-07j
  -8.84318716e-07+2.78923336e-07j -4.64503863e-08+1.76823969e-08j

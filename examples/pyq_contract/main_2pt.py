@@ -90,6 +90,17 @@ for gamma_idx, gamma_pyq in enumerate(pyq_gammalist):
     P_2pt_gamma[gamma_idx] = P_2pt
 
 
+def contract_2pt_TMD(prop_f, phases):
+        dq = g.qcd.baryon.diquark(g(prop_f * Cg5), g(Cg5 * prop_f))
+        proton1 = g(g.spin_trace(dq) * prop_f + dq * prop_f)
+        prop_unit = g.mspincolor(prop_f.grid)
+        prop_unit = g.identity(prop_unit)
+        corr = g.slice_trDA([prop_unit], [proton1], phases,3)
+        corr = [[corr[0][i][j] for i in range(0, len(corr[0]))] for j in range(0, len(corr[0][0])) ]
+
+        return corr
+
+
 #!: Output: gamma insertion, momentum, t_insert
 def contract_2pt_TMD_pyquda(prop_f, phases): #TODO: use pyquda function
     prop_f_pyq = gpt.LatticePropagatorGPT(prop_f, GEN_SIMD_WIDTH)
