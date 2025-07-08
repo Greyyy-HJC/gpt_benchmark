@@ -66,7 +66,7 @@ parameters = {
     "qext": [list(v + (0,)) for v in {tuple(sorted((x, y, z))) for x in [-2,-1,0] for y in [-2,-1,0] for z in [0]}], # momentum transfer for TMD, pf = pi + q
     "qext_PDF": [[x,y,z,0] for x in [-2,-1,0] for y in [-2,-1,0] for z in [-2,-1,0]], # momentum transfer for PDF, not used 
     "pf": [0,0,0,0],
-    "p_2pt": [[x,y,z,0] for x in [0] for y in [0] for z in [0, 1]], # 2pt momentum, should match pf & pi
+    "p_2pt": [[x,y,z,0] for x in [0] for y in [0] for z in [3]], # 2pt momentum, should match pf & pi
 
     "boost_in": [0,0,0],
     "boost_out": [0,0,0],
@@ -155,7 +155,7 @@ pc = g.qcd.fermion.preconditioner
 cg = inv.cg({"eps": 1e-10, "maxiter": 1000})
 propagator = w.propagator(inv.preconditioned(pc.eo1_ne(), cg))
 
-src_pos = [0,0,0,0]
+src_pos = [0,2,3,0]
 src = g.mspincolor(grid)
 g.create.point(src, src_pos)
 prop_exact_f = g.mspincolor(grid)
@@ -164,7 +164,8 @@ prop_exact_f @= propagator * src
 phases_2pt = Measurement.make_mom_phases_2pt(U_prime[0].grid, src_pos)
 tag = "gpt"
 
-print("phases_gpt: ", np.shape(phases_2pt))
+print(">>> phases_gpt shape: ", np.shape(phases_2pt[0][:]))
+print(">>> phases_gpt: ", phases_2pt[0][:])
 
 cp.cuda.runtime.deviceSynchronize()
 gpt_contract_start = time.time()
@@ -201,7 +202,15 @@ g.message(f"Correlation function saved to {outfile}")
 
 tag = "pyq"
 
-phases_2pt = phase.MomentumPhase(latt_info).getPhases([[0, 0, 0], [0, 0, -1]]) #TODO: use pyquda phase
+# phases_2pt = phase.MomentumPhase(latt_info).getPhases([[0, 0, 0], [0, 0, -1]], src_pos) #TODO: use pyquda phase
+p_2pt_xyz = [[-v[0], -v[1], -v[2]] for v in parameters["p_2pt"]] #! [-x, -y, -z], has an extra minus sign compared to "p_2pt" by convention
+phases_2pt = phase.MomentumPhase(latt_info).getPhases(p_2pt_xyz, src_pos)
+# phases_2pt = cp.asarray([phase * -1j for phase in phases_2pt])
+
+print(">>> phases_pyq shape: ", np.shape(phases_2pt))
+print(type(phases_2pt))
+print(">>> phases_pyq: ", phases_2pt[0][:])
+
 cp.cuda.runtime.deviceSynchronize()
 pyq_contract_start = time.time()
 corr_pyq = contract_2pt_TMD_pyquda(prop_exact_f, phases_2pt)
@@ -211,7 +220,7 @@ corr_pyq = np.array(corr_pyq.get())
 print(np.shape(corr_pyq))
 
 
-print("phases_pyq: ", np.shape(phases_2pt))
+
 
 # Save correlation function to txt file
 if g.rank() == 0:  # Only write from rank 0 process
