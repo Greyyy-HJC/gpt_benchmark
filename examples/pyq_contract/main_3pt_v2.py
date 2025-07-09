@@ -45,13 +45,13 @@ parameters = {
     "b_z": 3,
     "b_T": 0,
 
-    "qext": [list(v + (0,)) for v in {tuple(sorted((x, y, z))) for x in [0] for y in [0] for z in [1]}], # momentum transfer for TMD, pf = pi + q
+    "qext": [list(v + (0,)) for v in {tuple(sorted((x, y, z))) for x in [1] for y in [2] for z in [1]}], # momentum transfer for TMD, pf = pi + q
     "qext_PDF": [[x,y,z,0] for x in [0] for y in [0] for z in [0]], # momentum transfer for PDF, not used 
-    "pf": [0,0,0,0],
-    "p_2pt": [[x,y,z,0] for x in [0] for y in [0] for z in [0]], # 2pt momentum, should match pf & pi
+    "pf": [0,0,7,0],
+    "p_2pt": [[x,y,z,0] for x in [1] for y in [1] for z in [7]], # 2pt momentum, should match pf & pi
 
-    "boost_in": [0,0,0],
-    "boost_out": [0,0,0],
+    "boost_in": [0,0,3],
+    "boost_out": [0,0,3],
     "width" : 9.0,
 
     "pol": ["PpUnpol"],
@@ -78,14 +78,39 @@ def create_fw_prop_TMD_CG_pyquda(prop_f_pyq, W_index):
     current_bz = W_index[1]
     transverse_direction = W_index[3] # 0, 1
         
-    if transverse_direction == 0:
-        transverse_direction = X
-    elif transverse_direction == 1:
-        transverse_direction = Y
+    Zdir = 2
+    NZdir = 6
             
-    prop_shift_pyq = prop_f_pyq.shift(current_b_T, transverse_direction).shift(round(current_bz), Z)
+    # prop_shift_pyq = prop_f_pyq.shift(current_b_T, transverse_direction + 4).shift(round(current_bz), NZdir)
+    prop_shift_pyq = prop_f_pyq.shift(current_b_T, transverse_direction).shift(round(current_bz), Zdir)
     
     return prop_shift_pyq
+
+
+
+
+def test_shift(prop_f_pyq):
+    Xdir = 0
+    Zdir = 2
+    prop_shiftx_pyq = prop_f_pyq.shift(1, Xdir)
+    prop_shiftz_pyq = prop_f_pyq.shift(1, Zdir)
+    
+    prop_f_gpt = g.mspincolor(grid)
+    gpt.LatticePropagatorGPT(prop_f_gpt, GEN_SIMD_WIDTH, prop_f_pyq)
+    
+    prop_shiftx_gpt = g.eval(g.cshift(prop_f_gpt,Xdir,1))
+    prop_shiftz_gpt = g.eval(g.cshift(prop_f_gpt,Zdir,1))
+    
+    prop_shiftx_gpt_pyq = gpt.LatticePropagatorGPT(prop_shiftx_gpt, GEN_SIMD_WIDTH)
+    prop_shiftz_gpt_pyq = gpt.LatticePropagatorGPT(prop_shiftz_gpt, GEN_SIMD_WIDTH)
+    
+    diffx = prop_shiftx_gpt_pyq.data - prop_shiftx_pyq.data
+    diffz = prop_shiftz_gpt_pyq.data - prop_shiftz_pyq.data
+    
+    print("max difference in x direction: ", np.max(np.abs(diffx)))
+    print("max difference in z direction: ", np.max(np.abs(diffz)))
+    
+    return
 
 
 
@@ -111,7 +136,7 @@ latt_info, gpt_latt, gpt_simd, gpt_prec = gpt.LatticeInfoGPT(U_prime[0].grid, GE
 gauge = gpt.LatticeGaugeGPT(U_prime, GEN_SIMD_WIDTH)
 gauge.projectSU3(2e-14)
 
-src_pos = [0,0,0,0]
+src_pos = [1,2,3,4]
 
 
 dirac = core.getDirac(latt_info, -0.049, 1e-10,  5000, 1.0, 1.0372, 1.0372)
@@ -216,8 +241,19 @@ g.message("\ncontract_TMD loop: CG no links")
 proton_TMDs_down = [] # [WL_indices][pol][qext][gammalist][tau]
 proton_TMDs_up = []
 
+
+L = np.array(latt_info.size, dtype=int)
+Lhalf = L // 2
+
+def wrap_origin(origin):
+    """map origin to [-L/2, +L/2)"""
+    o = np.array(origin, dtype=int)
+    return ((o + Lhalf) % L - Lhalf).tolist()
+
+
 qext_xyz = [v[:3] for v in parameters["qext"]] #! [x, y, z] to be consistent with "qext"
-phases_3pt_pyq = phase.MomentumPhase(latt_info).getPhases(qext_xyz)
+# phases_3pt_pyq = phase.MomentumPhase(latt_info).getPhases(qext_xyz, wrap_origin(src_pos))
+phases_3pt_pyq = phase.MomentumPhase(latt_info).getPhases(qext_xyz, src_pos)
 
 sequential_bw_prop_down_pyq = contract(
                 "pwtzyxjicf, gim -> pgwtzyxjmcf",
@@ -229,6 +265,8 @@ sequential_bw_prop_up_pyq = contract(
                 sequential_bw_prop_up, pyquda_gamma_ls
             )
 
+print(">>> TEST SHIFT: ")
+test_shift(propag)
 
 for iW, WL_indices in enumerate(W_index_list_CG):
     cp.cuda.runtime.deviceSynchronize()
@@ -252,6 +290,7 @@ proton_TMDs_up = [contract("qwtzyx, pgwtzyx -> pqgt", phases_3pt_pyq, temp).get(
     
 proton_TMDs_down = np.array(proton_TMDs_down)
 proton_TMDs_up = np.array(proton_TMDs_up)
+
 g.message(f"contract_TMD over: proton_TMDs.shape {np.shape(proton_TMDs_down)}")
 
 tag = "pyquda"

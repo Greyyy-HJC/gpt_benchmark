@@ -9,15 +9,10 @@ from qTMD.gpt_proton_qTMD_utils import proton_measurement
 # load pyquda modules
 from pyquda import init, LatticeInfo
 from pyquda_utils import core, gpt, gamma
-import subprocess
-from opt_einsum import contract
 from pyquda_utils.core import X, Y, Z, T
+from opt_einsum import contract
 
 GEN_SIMD_WIDTH = 64
-
-G5 = gamma.gamma(15)
-GZ5 = gamma.gamma(4) @ G5
-GT5 = gamma.gamma(8) @ G5
 
 """
 ================================================================================
@@ -28,6 +23,7 @@ GT5 = gamma.gamma(8) @ G5
 my_gammas = ["5", "T", "T5", "X", "X5", "Y", "Y5", "Z", "Z5", "I", "SXT", "SXY", "SXZ", "SYT", "SYZ", "SZT"]
 #! Add PyQUDA gamma matrices by order
 my_pyquda_gammas = [gamma.gamma(15), gamma.gamma(8), gamma.gamma(7), gamma.gamma(1), gamma.gamma(14), gamma.gamma(2), gamma.gamma(13), gamma.gamma(4), gamma.gamma(11), gamma.gamma(0), gamma.gamma(9), gamma.gamma(3), gamma.gamma(5), gamma.gamma(10), gamma.gamma(6), gamma.gamma(12)]
+pyq_gamma_order = [15, 8, 7, 1, 14, 2, 13, 4, 11, 0, 9, 3, 5, 10, 6, 12]
 
 ### Projection of nucleon states
 Cg5 = (1j * g.gamma[1].tensor() * g.gamma[3].tensor()) * g.gamma[5].tensor()
@@ -66,10 +62,22 @@ for a in range (3):
     
 C = gamma.gamma(2) @ gamma.gamma(8)
 G5 = gamma.gamma(15)
+GZ5 = gamma.gamma(4) @ G5
+GT5 = gamma.gamma(8) @ G5
 
 pyquda_gamma_ls = cp.zeros((16, 4, 4), "<c16")
 for gamma_idx, gamma_pyq in enumerate(my_pyquda_gammas):
     pyquda_gamma_ls[gamma_idx] = gamma_pyq
+    
+#! PyQUDA directions for shift
+Xdir = 0
+Ydir = 1
+Zdir = 2
+Tdir = 3
+NXdir = 4
+NYdir = 5
+NZdir = 6
+NTdir = 7
 
 
 """
@@ -217,21 +225,21 @@ class proton_TMD(proton_measurement):
         
         corr = (
                 - contract(
-                "abc, def, pwtzyx, ij, kl, qtmn, wtzyxikad, wtzyxjlbe, wtzyxmncf->qpt",
+                "abc, def, pwtzyx, ij, kl, gtmn, wtzyxikad, wtzyxjlbe, wtzyxmncf->gpt",
                 epsilon,    epsilon,    phases,    interp_opt,    interp_opt,    P_2pt_gamma,
                 prop_f_pyq.data,  prop_f_pyq.data,  prop_f_pyq.data,
                 ) 
                 - contract(
-                    "abc, def, pwtzyx, ij, kl, qtmn, wtzyxikad, wtzyxjnbe, wtzyxmlcf->qpt",
+                    "abc, def, pwtzyx, ij, kl, gtmn, wtzyxikad, wtzyxjnbe, wtzyxmlcf->gpt",
                     epsilon,    epsilon,    phases,    interp_opt,    interp_opt,    P_2pt_gamma,
                     prop_f_pyq.data,  prop_f_pyq.data,  prop_f_pyq.data,
                 )
             )
-        corr = corr.get()
+        corr_collect = core.gatherLattice(corr.get(), [2, -1, -1, -1])
         
         if g.rank() == 0:
-            save_proton_c2pt_hdf5(corr, tag, my_gammas, self.pilist)
-        del corr
+            save_proton_c2pt_hdf5(corr_collect, tag, my_gammas, self.pilist)
+        del corr, corr_collect
 
     #function that does the contractions for the smeared-smeared pion 2pt function
     def contract_2pt_TMD_old(self, prop_f, phases, trafo, tag):
@@ -264,17 +272,19 @@ class proton_TMD(proton_measurement):
         return prop_list
     
     #! PyQUDA: create forward propagator for CG TMD
-    def create_fw_prop_TMD_CG_pyquda(self, prop_f_pyq, W_index):
+    def create_fw_prop_TMD_CG_pyquda(self, prop_f_pyq, W_index, grid):
         current_b_T = W_index[0]
         current_bz = W_index[1]
         transverse_direction = W_index[3] # 0, 1
-            
-        if transverse_direction == 0:
-            transverse_direction = X
-        elif transverse_direction == 1:
-            transverse_direction = Y
                 
-        prop_shift_pyq = prop_f_pyq.shift(current_b_T, transverse_direction).shift(round(current_bz), Z)
+        # prop_shift_pyq = prop_f_pyq.shift(current_b_T, transverse_direction).shift(round(current_bz), Zdir) #todo: use this after fix the problem of shift
+        
+        #todo: remove this after fix the problem of shift
+        prop_shift_gpt = g.mspincolor(grid)
+        gpt.LatticePropagatorGPT(prop_shift_gpt, GEN_SIMD_WIDTH, prop_f_pyq)
+        prop_shift_gpt = g.eval(g.cshift(g.cshift(prop_shift_gpt,transverse_direction,current_b_T),Zdir,round(current_bz)))
+        prop_shift_pyq = gpt.LatticePropagatorGPT(prop_shift_gpt, GEN_SIMD_WIDTH)
+        #todo
         
         return prop_shift_pyq
 
@@ -436,7 +446,7 @@ class proton_TMD(proton_measurement):
             
             prop_pyquda_contracted = contract( "wtzyxijfc, ik -> wtzyxjkcf", prop_pyquda.data.conj(), G5 )
             del src_pyquda, prop_pyquda
-
+            
             dst_seq.append(prop_pyquda_contracted)
             
         dst_seq = cp.asarray(dst_seq)

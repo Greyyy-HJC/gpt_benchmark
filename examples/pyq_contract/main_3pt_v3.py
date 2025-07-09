@@ -43,16 +43,16 @@ parameters = {
     
     # NOTE:
     "eta": [0],  # irrelavant for CG TMD
-    "b_z": 3,
-    "b_T": 0,
+    "b_z": 2,
+    "b_T": 2,
 
-    "qext": [list(v + (0,)) for v in {tuple(sorted((x, y, z))) for x in [0] for y in [0] for z in [1]}], # momentum transfer for TMD, pf = pi + q
+    "qext": [list(v + (0,)) for v in {tuple(sorted((x, y, z))) for x in [-2] for y in [-1] for z in [-1]}], # momentum transfer for TMD, pf = pi + q
     "qext_PDF": [[x,y,z,0] for x in [0] for y in [0] for z in [0]], # momentum transfer for PDF, not used 
-    "pf": [0,0,0,0],
-    "p_2pt": [[x,y,z,0] for x in [0] for y in [0] for z in [0]], # 2pt momentum, should match pf & pi
+    "pf": [0,0,7,0],
+    "p_2pt": [[x,y,z,0] for x in [1] for y in [1] for z in [7]], # 2pt momentum, should match pf & pi
 
-    "boost_in": [0,0,0],
-    "boost_out": [0,0,0],
+    "boost_in": [0,0,3],
+    "boost_out": [0,0,3],
     "width" : 9.0,
 
     "pol": ["PpUnpol"],
@@ -65,6 +65,30 @@ pf_tag = "PX"+str(pf[0]) + "PY"+str(pf[1]) + "PZ"+str(pf[2]) + "dt" + str(parame
 gammalist = ["5", "T", "T5", "X", "X5", "Y", "Y5", "Z", "Z5", "I", "SXT", "SXY", "SXZ", "SYT", "SYZ", "SZT"]
 pyq_gammalist = [gamma.gamma(15), gamma.gamma(8), gamma.gamma(7), gamma.gamma(1), gamma.gamma(14), gamma.gamma(2), gamma.gamma(13), gamma.gamma(4), gamma.gamma(11), gamma.gamma(0), gamma.gamma(9), gamma.gamma(3), gamma.gamma(5), gamma.gamma(10), gamma.gamma(6), gamma.gamma(12)]
 pyq_gamma_order = [15, 8, 7, 1, 14, 2, 13, 4, 11, 0, 9, 3, 5, 10, 6, 12]
+
+
+def test_shift(prop_f_pyq):
+    Xdir = 0
+    Zdir = 2
+    prop_shiftx_pyq = prop_f_pyq.shift(1, Xdir)
+    prop_shiftz_pyq = prop_f_pyq.shift(1, Zdir)
+    
+    prop_f_gpt = g.mspincolor(grid)
+    gpt.LatticePropagatorGPT(prop_f_gpt, GEN_SIMD_WIDTH, prop_f_pyq)
+    
+    prop_shiftx_gpt = g.eval(g.cshift(prop_f_gpt,Xdir,1))
+    prop_shiftz_gpt = g.eval(g.cshift(prop_f_gpt,Zdir,1))
+    
+    prop_shiftx_gpt_pyq = gpt.LatticePropagatorGPT(prop_shiftx_gpt, GEN_SIMD_WIDTH)
+    prop_shiftz_gpt_pyq = gpt.LatticePropagatorGPT(prop_shiftz_gpt, GEN_SIMD_WIDTH)
+    
+    diffx = prop_shiftx_gpt_pyq.data - prop_shiftx_pyq.data
+    diffz = prop_shiftz_gpt_pyq.data - prop_shiftz_pyq.data
+    
+    g.message(f"DEBUG: Max difference in x direction: {np.max(np.abs(diffx))}")
+    g.message(f"DEBUG: Max difference in z direction: {np.max(np.abs(diffz))}")
+    
+    return None
 
 Measurement = proton_TMD(parameters)
 
@@ -111,9 +135,9 @@ U_prime, trafo = g.gauge_fix(U, maxiter=50000, prec=1e-8) # CG fix, to get trafo
 
 latt_info, gpt_latt, gpt_simd, gpt_prec = gpt.LatticeInfoGPT(U_prime[0].grid, GEN_SIMD_WIDTH)
 gauge = gpt.LatticeGaugeGPT(U_prime, GEN_SIMD_WIDTH)
-gauge.projectSU3(2e-14)
+# gauge.projectSU3(2e-14)
 
-src_pos = [0,0,0,0]
+src_pos = [1,2,3,4]
 
 
 dirac = core.getDirac(latt_info, -0.049, 1e-10,  5000, 1.0, 1.0372, 1.0372)
@@ -221,7 +245,9 @@ proton_TMDs_down = [] # [WL_indices][pol][qext][gammalist][tau]
 proton_TMDs_up = []
 
 qext_xyz = [v[:3] for v in parameters["qext"]] #! [x, y, z] to be consistent with "qext"
-phases_3pt_pyq = phase.MomentumPhase(latt_info).getPhases(qext_xyz)
+phases_3pt_pyq = phase.MomentumPhase(latt_info).getPhases(qext_xyz, src_pos)
+
+test_shift(propag)
 
 
 sequential_prop_down = contract(
