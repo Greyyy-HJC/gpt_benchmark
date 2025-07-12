@@ -53,6 +53,12 @@ print(phases_3pt[0][:] - phases_3pt_pyq[0].get().reshape(-1, 1))
 
 
 # %%
+'''
+Below are the definitions of the phases functions in gpt and pyquda.
+'''
+
+
+
 #! gpt
 ######################### gpt #########################
 

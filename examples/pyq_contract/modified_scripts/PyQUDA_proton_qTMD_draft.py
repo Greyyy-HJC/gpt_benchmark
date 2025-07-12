@@ -272,19 +272,12 @@ class proton_TMD(proton_measurement):
         return prop_list
     
     #! PyQUDA: create forward propagator for CG TMD
-    def create_fw_prop_TMD_CG_pyquda(self, prop_f_pyq, W_index, grid):
+    def create_fw_prop_TMD_CG_pyquda(self, prop_f_pyq, W_index):
         current_b_T = W_index[0]
         current_bz = W_index[1]
         transverse_direction = W_index[3] # 0, 1
                 
-        # prop_shift_pyq = prop_f_pyq.shift(current_b_T, transverse_direction).shift(round(current_bz), Zdir) #todo: use this after fix the problem of shift
-        
-        #todo: remove this after fix the problem of shift
-        prop_shift_gpt = g.mspincolor(grid)
-        gpt.LatticePropagatorGPT(prop_shift_gpt, GEN_SIMD_WIDTH, prop_f_pyq)
-        prop_shift_gpt = g.eval(g.cshift(g.cshift(prop_shift_gpt,transverse_direction,current_b_T),Zdir,round(current_bz)))
-        prop_shift_pyq = gpt.LatticePropagatorGPT(prop_shift_gpt, GEN_SIMD_WIDTH)
-        #todo
+        prop_shift_pyq = prop_f_pyq.shift(current_b_T, transverse_direction).shift(round(current_bz), Zdir)
         
         return prop_shift_pyq
 

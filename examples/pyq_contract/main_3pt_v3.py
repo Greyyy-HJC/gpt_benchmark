@@ -260,29 +260,83 @@ sequential_prop_up = contract(
                 G5, sequential_bw_prop_up.conj(), G5
             )
 
+
+
+
+
+
+
+
+# for iW, WL_indices in enumerate(W_index_list_CG):
+#     cp.cuda.runtime.deviceSynchronize()
+#     t0 = time.time()
+#     g.message(f"TIME PyQUDA: contract TMD {iW+1}/{len(W_index_list_CG)} {WL_indices}")
+#     tmd_forward_prop = create_fw_prop_TMD_CG_pyquda(propag, WL_indices)
+#     cp.cuda.runtime.deviceSynchronize()
+#     g.message(f"TIME PyQUDA: cshift", time.time() - t0)
+#     cp.cuda.runtime.deviceSynchronize()
+#     t0 = time.time()
+    
+#     proton_TMDs_down += [cp.asarray( [pycontract.mesonAllSinkTwoPoint(tmd_forward_prop, core.LatticePropagator(latt_info, seq), gamma.Gamma(0)).data for seq in sequential_prop_down] )]
+#     proton_TMDs_up += [cp.asarray( [pycontract.mesonAllSinkTwoPoint(tmd_forward_prop, core.LatticePropagator(latt_info, seq), gamma.Gamma(0)).data for seq in sequential_prop_up] )]
+    
+#     cp.cuda.runtime.deviceSynchronize()
+#     g.message(f"TIME PyQUDA: contract TMD for U and D", time.time() - t0)
+#     del tmd_forward_prop
+    
+# proton_TMDs_down = [contract("qwtzyx, pgwtzyx -> pqgt", phases_3pt_pyq, temp).get() for temp in proton_TMDs_down]
+# proton_TMDs_up = [contract("qwtzyx, pgwtzyx -> pqgt", phases_3pt_pyq, temp).get() for temp in proton_TMDs_up]
+    
+# proton_TMDs_down = np.array(proton_TMDs_down)[:,:,:,pyq_gamma_order,:]
+# proton_TMDs_up = np.array(proton_TMDs_up)[:,:,:,pyq_gamma_order,:]
+# g.message(f"contract_TMD over: proton_TMDs.shape {np.shape(proton_TMDs_down)}")
+
+
+
 for iW, WL_indices in enumerate(W_index_list_CG):
     cp.cuda.runtime.deviceSynchronize()
     t0 = time.time()
     g.message(f"TIME PyQUDA: contract TMD {iW+1}/{len(W_index_list_CG)} {WL_indices}")
-    tmd_forward_prop = create_fw_prop_TMD_CG_pyquda(propag, WL_indices)
+    tmd_forward_prop = create_fw_prop_TMD_CG_pyquda(propag, WL_indices) #! note here [WL_indices] is changed to WL_indices for PyQUDA, and prop_exact_f is changed to propag
     cp.cuda.runtime.deviceSynchronize()
     g.message(f"TIME PyQUDA: cshift", time.time() - t0)
     cp.cuda.runtime.deviceSynchronize()
     t0 = time.time()
-    
-    proton_TMDs_down += [cp.asarray( [pycontract.mesonAllSinkTwoPoint(tmd_forward_prop, core.LatticePropagator(latt_info, seq), gamma.Gamma(0)).data for seq in sequential_prop_down] )]
-    proton_TMDs_up += [cp.asarray( [pycontract.mesonAllSinkTwoPoint(tmd_forward_prop, core.LatticePropagator(latt_info, seq), gamma.Gamma(0)).data for seq in sequential_prop_up] )]
-    
+    #todo: contraction v2
+    temp_down = []
+    for seq in sequential_prop_down:
+        temp1 = pycontract.mesonAllSinkTwoPoint(tmd_forward_prop, core.LatticePropagator(latt_info, seq), gamma.Gamma(0)).data
+        temp2 = core.gatherLattice(contract("qwtzyx, gwtzyx -> qgt", phases_3pt_pyq, temp1).get(), [2, -1, -1, -1])
+        temp_down.append(temp2)
+        
+    temp_up = []
+    for seq in sequential_prop_up:
+        temp1 = pycontract.mesonAllSinkTwoPoint(tmd_forward_prop, core.LatticePropagator(latt_info, seq), gamma.Gamma(0)).data
+        temp2 = core.gatherLattice(contract("qwtzyx, gwtzyx -> qgt", phases_3pt_pyq, temp1).get(), [2, -1, -1, -1])
+        temp_up.append(temp2)
+        
+    proton_TMDs_down.append(temp_down)
+    proton_TMDs_up.append(temp_up)
+    #todo
     cp.cuda.runtime.deviceSynchronize()
     g.message(f"TIME PyQUDA: contract TMD for U and D", time.time() - t0)
     del tmd_forward_prop
-    
-proton_TMDs_down = [contract("qwtzyx, pgwtzyx -> pqgt", phases_3pt_pyq, temp).get() for temp in proton_TMDs_down]
-proton_TMDs_up = [contract("qwtzyx, pgwtzyx -> pqgt", phases_3pt_pyq, temp).get() for temp in proton_TMDs_up]
-    
-proton_TMDs_down = np.array(proton_TMDs_down)[:,:,:,pyq_gamma_order,:]
-proton_TMDs_up = np.array(proton_TMDs_up)[:,:,:,pyq_gamma_order,:]
+cp.cuda.runtime.deviceSynchronize()
+t0 = time.time()
+proton_TMDs_down = np.array(proton_TMDs_down)
+print(proton_TMDs_down.shape)
+proton_TMDs_up = np.array(proton_TMDs_up)
+#todo: contraction v2
+proton_TMDs_down = proton_TMDs_down[:,:,:,pyq_gamma_order,:]
+proton_TMDs_up = proton_TMDs_up[:,:,:,pyq_gamma_order,:]
+#todo
 g.message(f"contract_TMD over: proton_TMDs.shape {np.shape(proton_TMDs_down)}")
+
+
+
+
+
+
 
 tag = "pyquda"
 
